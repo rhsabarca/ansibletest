@@ -1,0 +1,213 @@
+---
+- hosts: satellite
+  remote_user: root
+  any_errors_fatal: true
+  vars_files:
+    - ./vars.yaml
+  tasks:
+    - name: Valida si RAM es suficiente
+      ansible.builtin.assert:
+        that:
+          - "ansible_memtotal_mb > {{ min_memory }}"
+    - name: Crea partición primaria Disco Satellite
+      community.general.parted:
+        device: /dev/{{ disco }}
+        number: 1
+        state: present
+    - name: Crea VG Satellite
+      community.general.lvg:
+          vg: vg_satellite
+          pvs: /dev/{{ disco }}1
+    - name: Crea Lvs
+      lvol:
+        vg: vg_satellite
+        lv: "{{ item.vol }}"
+        size: "{{ item.size }}"
+      with_items:
+        -  { vol: 'lv_cache_pulp', size: "{{ lv_cache_pulp_size }}" }
+        -  { vol: 'lv_pulp', size: "{{ lv_pulp_size }}" }
+        -  { vol: 'lv_mongodb', size: "{{ lv_mongodb_size }}" }
+        -  { vol: 'lv_pgsql', size: "{{ lv_pgsql_size }}" }
+        -  { vol: 'lv_squid', size: "{{ lv_squid_size }}" }
+    - name: Format de disco cache_pulp
+      filesystem:
+       fstype: xfs
+       dev: /dev/vg_satellite/lv_cache_pulp
+    - name: Format de disco pulp
+      filesystem:
+       fstype: xfs
+       dev: /dev/vg_satellite/lv_pulp
+    - name: Format de disco mongodb
+      filesystem:
+       fstype: xfs
+       dev: /dev/vg_satellite/lv_mongodb
+    - name: Format de disco pgsql
+      filesystem:
+       fstype: xfs
+       dev: /dev/vg_satellite/lv_pgsql
+    - name: Format de disco squid
+      filesystem:
+        fstype: xfs
+        dev: /dev/vg_satellite/lv_squid
+    - name: Crea punto de montaje /var/cache/pulp
+      file:
+        path: /var/cache/pulp
+        state: directory
+    - name: Crea punto de montaje /var/lib/pulp
+      file:
+        path: /var/lib/pulp
+        state: directory
+    - name: Crea punto de montaje /var/lib/mongodb
+      file:
+        path: /var/lib/mongodb
+        state: directory
+    - name: Crea punto de montaje /var/lib/pgsql
+      file:
+        path: /var/lib/pgsql
+        state: directory
+    - name: Crea punto de montaje /var/spool/squid
+      file:
+        path: /var/spool/squid
+        state: directory
+    - name: Monta filesystem
+      ansible.posix.mount:
+        path: /var/cache/pulp
+        src: /dev/vg_satellite/lv_cache_pulp
+        fstype: xfs
+        state: mounted
+    - name: Monta filesystem
+      ansible.posix.mount:
+        path: /var/lib/pulp
+        src: /dev/vg_satellite/lv_pulp
+        fstype: xfs
+        state: mounted
+    - name: Monta filesystem
+      ansible.posix.mount:
+        path: /var/lib/mongodb
+        src: /dev/vg_satellite/lv_mongodb
+        fstype: xfs
+        state: mounted
+    - name: Monta filesystem
+      ansible.posix.mount:
+        path: /var/lib/pgsql
+        src: /dev/vg_satellite/lv_pgsql
+        fstype: xfs
+        state: mounted
+    - name: Monta filesystem
+      ansible.posix.mount:
+        path: /var/spool/squid
+        src: /dev/vg_satellite/lv_squid
+        fstype: xfs
+        state: mounted
+    - name: Agrega reglas de firewall necesarias
+      firewalld:
+       port: "{{ item }}"
+       permanent: true
+       state: enabled
+      with_items:
+       - 53/udp
+       - 67/udp
+       - 80/tcp
+       - 5000/tcp
+       - 8000/tcp
+       - 9090/tcp
+       - 53/tcp
+       - 69/udp
+       - 443/tcp
+       - 5647/tcp
+       - 8140/tcp
+       - 5646/tcp
+    - name: Reinicia firewall
+      systemd:
+       name: firewalld
+       state: reloaded
+    - name: Registra servidor y atacha pool
+      redhat_subscription:
+       state: present
+       username: "{{ rhn_user }}"
+       password: "{{ rhn_pass }}"
+       pool_ids: "{{ rhn_pool }}"
+       auto_attach: false
+      when:
+         - rhn_register
+         - not proxy
+    - name: Habilita proxy para rhn
+      redhat_subscription:
+       state: present
+       username: "{{ rhn_user }}"
+       password: "{{ rhn_pass }}"
+       pool_ids: "{{ rhn_pool }}"
+       auto_attach: false
+       server_proxy_hostname: "{{ proxy_url }}"
+       server_proxy_port: "{{ proxy_port }}"
+      when:
+          - proxy
+          - rhn_register
+    - name: Deshabilita repos
+      rhsm_repository:
+        name: '*'
+        state: disabled
+    - name: Habilita repositorios especificos
+      rhsm_repository:
+        name: "{{ item }}"
+        state: enabled
+      with_items:
+#         - ansible-2-for-rhel-8-x86_64-rpms
+         - rhel-8-for-x86_64-baseos-rpms
+         - rhel-8-for-x86_64-baseos-source-rpms
+         - rhel-8-for-x86_64-appstream-rpms
+         - satellite-6.13-for-rhel-8-x86_64-rpms
+         - satellite-maintenance-6.13-for-rhel-8-x86_64-rpms
+    - name: Habilita modulo de Satellite
+      ansible.builtin.command: dnf module enable -y satellite:el8
+    - name: Actualiza todos los paquetes
+      dnf:
+        name: "*"
+        state: latest
+    - name: Instala rpm de Satellite
+      ansible.builtin.dnf:
+       name: "{{ item }}"
+       state: present
+      with_items:
+        - sos
+        - satellite
+    - name: Install Satellite (/var/log/foreman-installer/satellite.log)
+      shell: "satellite-installer --scenario satellite --foreman-initial-organization {{ organization }} --foreman-initial-location {{ location }} --foreman-initial-admin-username admin --foreman-initial-admin-password {{ password }} --foreman-proxy-dns-managed=false \
+ {% if tftp is sameas true  %} \
+      --foreman-proxy-tftp-servername $(hostname) \
+     {% endif %} \
+     {% if dhcp is sameas true  %} \
+      --foreman-proxy-dhcp-nameservers={{ dhcp_nameservers }} --foreman-proxy-dhcp-interface={{ dhcp_interface }} --foreman-proxy-dhcp-range={{ dhcp_range }}  --foreman-proxy-dhcp-gateway={{ dhcp_gateway }} --foreman-proxy-dhcp true \
+     {% endif %} \
+     {% if proxy is sameas true  %} \
+      --katello-proxy-url={{ proxy_url }} --katello-proxy-port={{ proxy_port }}  \
+     {% endif %}"
+      environment:
+         LC_ALL: en_US.UTF-8
+    - name: Copia archivo manifest.
+      copy:
+         src: ./files/{{ manifest_name }}
+         dest: /root/
+         owner: root
+    - name: Copia scripts
+      copy:
+         src: ./files/{{ item }}
+         dest: /root/
+         owner: root
+         mode: 755
+      with_items:
+          - post1.sh
+          - post2.sh
+          - post3.sh
+          - postCapsule.sh
+          - post5.sh
+    - name: Importa manifest
+      shell: hammer subscription upload --file {{ manifest_name }} --organization {{ organization }}
+    - name: Ejecuta post configuraciones N° 1
+      shell: /root/post1.sh
+    - name: Ejecuta post configuraciones N° 3
+      shell: /root/post3.sh
+    - name: Ejecuta post configuraciones N° 2
+      shell: /root/post2.sh
+    - name: Ejecuta post configuraciones Capsule Satellite
+      shell: /root/postCapsule.sh
