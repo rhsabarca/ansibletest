@@ -2,25 +2,21 @@
   hosts: all
   gather_facts: yes
   tasks:
-    - name: Gather CPU usage
+    - name: CPU usage
       shell: top -bn1 | grep 'Cpu(s)' | awk '{print $2}'
       register: cpu_usage
 
-    - name: Gather CPU usage
+    - name: Linux Version
       shell: cat /etc/redhat-release
       register: version_rhel
 
-    - name: Gather RAM Usage
+    - name: RAM Usage
       shell: top -bn1 | awk '/MiB Mem/ {printf "%.2f\n", $8/$4 * 100}'
       register: ram_usage
 
     - name: Gather Disk Space
       shell: "df -h --output=pcent / | awk 'NR==2 {print $1}'"
       register: disk_space
-
-    - name: Gather Disk Space
-      shell: firewall-cmd --list-all
-      register: firewall_port
 
     - name: Usage Stats
       debug:
