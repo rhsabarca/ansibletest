@@ -1,6 +1,7 @@
 - name: Gather CPU RAM and Disk Space Usage
   hosts: all
   gather_facts: yes
+  
   tasks:
     - name: CPU usage
       shell: top -bn1 | grep 'Cpu(s)' | awk '{print $2}'
@@ -25,5 +26,4 @@
           - "CPU Usage: {{ cpu_usage.stdout }}%"
           - "RAM Usage: {{ ram_usage.stdout }}%"
           - "Disk Space Used: {{ disk_space.stdout }}"
-          - "Linux Version: {{ version_rhel.stdout }}"
-          - "Firewall Port: {{ firewall_port.stdout }}"
+          - "Linux Version: {{ version_rhel.stdout }}"         
