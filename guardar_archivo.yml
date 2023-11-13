@@ -1,1 +1,11 @@
+---
+- name: Generar archivo en la máquina rhel
+hosts: locahost
+tasks:
 
+- name: crear archivo
+  copy:
+    dest: “{{ ruta_archivo }}/{{ item }}.txt”
+    content: |
+      “{{ list_info }}”
+  with_items: “{{ machine_names }}”
