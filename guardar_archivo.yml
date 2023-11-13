@@ -1,6 +1,6 @@
 ---
 - name: Generar archivo en la máquina rhel
-hosts: locahost
+hosts: localhost
 tasks:
 
 - name: crear archivo
