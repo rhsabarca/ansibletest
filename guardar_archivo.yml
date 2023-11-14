@@ -1,10 +1,10 @@
 ---
 - name: Generar archivo en la máquina rhel
-  hosts: localhost
+  hosts: all
   tasks:
   
   - name: crear archivo
-    shell: echo $HOSTNAME
+    shell: hostname
     register: local_host
 
   - name: print hostname
