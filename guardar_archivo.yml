@@ -4,8 +4,14 @@
   tasks:
   
   - name: crear archivo
-    copy:
-      dest: “{{ ruta_archivo }}/{{ item }}.txt”
-      content: |
-        “{{ list_info }}”
-    with_items: “{{ machine_names }}”
+    shell: hotstname
+    register: local_host
+
+  - name: print hostname
+    debug:
+      msg: "{{ local_host.stdout_lines }}"
+
+  - set_stats:
+    data:
+      list_host: "{{ local_host.stdout_lines }}"
+    
