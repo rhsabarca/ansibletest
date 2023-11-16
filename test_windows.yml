@@ -4,8 +4,8 @@
   tasks:
     - name: windows ping
       win_ping:
-      register: ping-out
+      register: registro_ping
 
     - name: print resultados
       debug:
-        msg: "{{ ping-out.stdout_lines }} "
+        msg: "{{ registro_ping.stdout_lines }} "
