@@ -1,1 +1,11 @@
+---
+- name: conexion maquinas windows
+  hosts: all
+  tasks:
+    - name: windows ping
+      win_ping:
+      register: ping_out
 
+    - name: print resultados
+      debug:
+        msg: "{{ ping_out.stdout_lines }}"
