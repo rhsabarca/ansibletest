@@ -3,9 +3,9 @@
   hosts: all
   tasks:
     - name: windows ping
-      win_ping:
+      ansible.windows.win_ping:
       register: registro_ping
 
     - name: print resultados
-      debug:
+      ansible.built.debug:
         msg: "{{ registro_ping }} "
