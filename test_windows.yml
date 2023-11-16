@@ -8,4 +8,4 @@
 
     - name: print resultados
       debug:
-        msg: "{{ registro_ping.stdout_lines }} "
+        msg: "{{ registro_ping }} "
