@@ -7,5 +7,5 @@
       register: registro_ping
 
     - name: print resultados
-      ansible.built.debug:
+      debug:
         msg: "{{ registro_ping }} "
