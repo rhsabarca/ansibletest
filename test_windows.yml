@@ -8,4 +8,4 @@
 
     - name: print resultados
       debug:
-        msg: "{{ ping_out.stdout_lines }}"
+        msg: "{{ ping_out.stdout_lines }} "
