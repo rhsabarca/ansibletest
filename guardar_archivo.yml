@@ -12,6 +12,6 @@
       msg: "{{ local_host.stdout_lines }}"
 
   - set_stats:
-    data:
-      list_host: "{{ local_host.stdout_lines }}"
+      data:
+        list_host: "{{ local_host.stdout_lines }}"
     
