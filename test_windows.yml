@@ -7,11 +7,11 @@
       register: registro_ping
 
     - name: list volume
-      win_shell: Get-Volume
+      win_command: pwsh Get-Volume
       register:unidades
 
     - name: print resultados
       debug:
-        msg: 
-        - "{{ registro_ping }}"
-        - "{{ unidades }}"
+        msg: "{{ unidades }}"
+        
+       
