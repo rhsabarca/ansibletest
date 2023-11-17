@@ -7,7 +7,7 @@
       register: registro_ping
 
     - name: list volume
-      win_command: pwsh Get-Volume
+      win_command: powershell.exe Get-Volume
       register:unidades
 
     - name: print resultados
