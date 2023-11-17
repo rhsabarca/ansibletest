@@ -6,6 +6,12 @@
       win_ping:
       register: registro_ping
 
+    - name: list volume
+      win_shell: Get-Volume
+      register:unidades
+
     - name: print resultados
       debug:
-        msg: "{{ registro_ping }} "
+        msg: 
+        - "{{ registro_ping }}"
+        - "{{ unidades }}"
