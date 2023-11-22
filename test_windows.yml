@@ -2,13 +2,14 @@
 - name: conexion maquinas windows
   hosts: all
   tasks:
+  
     - name: windows ping
       win_ping:
       register: registro_ping
 
     - name: list volume
       win_command: powershell.exe Get-Volume
-      register:unidades
+      register: unidades
 
     - name: print resultados
       debug:
