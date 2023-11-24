@@ -27,3 +27,19 @@
           - "RAM Usage: {{ ram_usage.stdout }}%"
           - "Disk Space Used: {{ disk_space.stdout }}"
           - "Linux Version: {{ version_rhel.stdout }}"         
+
+    - name: Check DB connection
+      community.general.mssql_script:
+        login_user: "redhat"
+        login_password: "10Constanza#"
+        login_host: "10.0.0.5"
+        login_port: "1433"
+        db: BACtest
+        script: "SELECT * from linuxtest"
+      register: out_database
+      delegate_to: localhost
+
+    - name: Usage Stats
+      ansible.builtin.debug:
+        msg: "{{ out_database.stdout }}" 
+      
