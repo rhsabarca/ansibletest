@@ -41,5 +41,5 @@
 
     - name: Usage Stats
       ansible.builtin.debug:
-        msg: "{{ out_database.stdout }}" 
+        msg: "{{ out_database }}" 
       
