@@ -32,7 +32,7 @@
       community.general.mssql_script:
         login_user: "redhat"
         login_password: "10Constanza#"
-        login_host: "10.0.0.5"
+        login_host: "10.0.0.13"
         login_port: "1433"
         db: BACtest
         script: "SELECT * from linuxtest"
