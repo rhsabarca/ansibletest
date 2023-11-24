@@ -28,7 +28,23 @@
           - "Disk Space Used: {{ disk_space.stdout }}"
           - "Linux Version: {{ version_rhel.stdout }}"         
 
-    - name: Check DB connection
+    - name: Insertar datos SQL Server
+      community.general.mssql_script:
+        login_user: "prueba"
+        login_password: "10Constanza#"
+        login_host: "10.0.0.13"
+        login_port: "1433"
+        db: "BACtest"
+        script: |
+           INSERT INTO linuxtest VALUES ('{{ ansible_date_time.date }}', '{{ version_rhel.stdout }}', '{{ cpu_usage.stdout }}', '{{ ram_usage.stdout }}', '{{ disk_space.stdout }}');
+      register: out_insert_db
+      delegate_to: localhost
+
+    - name: Resultado insertado datos
+      ansible.builtin.debug:
+        msg: "{{ out_insert_db.query_results }}" 
+
+    - name: Obtener datos de tabla
       community.general.mssql_script:
         login_user: "prueba"
         login_password: "10Constanza#"
@@ -39,7 +55,6 @@
       register: out_database
       delegate_to: localhost
 
-    - name: Usage Stats
+    - name: resultado de obtención de datos de tabla
       ansible.builtin.debug:
         msg: "{{ out_database.query_results }}" 
-      
